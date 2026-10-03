@@ -13,3 +13,9 @@ body {
     padding: 20px;
     border-radius: 10px;
 }
+
+.qr-container {
+    margin-top: 15px;
+    width: 150px;
+    height: 150px;
+}
