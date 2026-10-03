@@ -12,14 +12,42 @@ async function loadProducts() {
 
         card.innerHTML = `
             <h2>${product.product_name}</h2>
-            <p>Product Code: ${product.product_code}</p>
-            <p>QR Code: ${product.qr_code}</p>
-            <p>Category: ${product.category}</p>
-            <p>Current Stock: ${product.quantity}</p>
-            <p>Selling Price: ₹${product.selling_price}</p>
+
+            <p>
+                Product Code: ${product.product_code}
+            </p>
+
+            <p>
+                QR Code: ${product.qr_code}
+            </p>
+
+            <p>
+                Category: ${product.category}
+            </p>
+
+            <p>
+                Current Stock: ${product.quantity}
+            </p>
+
+            <p>
+                Selling Price: ₹${product.selling_price}
+            </p>
+
+            <div id="qr-${product.product_code}"></div>
         `;
 
         container.appendChild(card);
+
+        // Generate QR code
+        new QRCode(
+            document.getElementById(`qr-${product.product_code}`),
+            {
+                text: product.qr_code,
+                width: 150,
+                height: 150
+            }
+        );
+
     });
 }
 
@@ -29,6 +57,7 @@ function startScanner() {
     const scanner = new Html5Qrcode("reader");
 
     scanner.start(
+
         { facingMode: "environment" },
 
         {
@@ -42,11 +71,15 @@ function startScanner() {
                 `<h3>Scanned QR: ${decodedText}</h3>`;
 
             scanner.stop();
+
         },
 
         (errorMessage) => {
+
             // Ignore scanning errors
+
         }
+
     );
 }
 
