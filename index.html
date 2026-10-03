@@ -2,7 +2,9 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Stock Management POC</title>
@@ -11,12 +13,17 @@
 
     <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 </head>
 
 <body>
 
     <h1>Stock Management</h1>
 
+    <!-- QR Scanner -->
     <button onclick="startScanner()">
         Scan QR Code
     </button>
@@ -24,6 +31,8 @@
     <div id="reader" style="width:300px; margin-top:20px;"></div>
 
     <div id="scan-result"></div>
+
+    <hr>
 
     <h2>Products</h2>
 
