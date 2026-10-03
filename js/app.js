@@ -19,31 +19,18 @@ async function loadProducts() {
         products = await response.json();
 
 
-        // ---------------------------------------------
-        // Load saved stock from localStorage
-        // ---------------------------------------------
-
-        const savedStock =
-            JSON.parse(
-                localStorage.getItem("stock_data")
-            ) || {};
-
-
+        // Load saved stock for every product
         products.forEach(product => {
 
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    savedStock,
-                    product.product_code
-                )
-            ) {
+            const savedStock =
+                localStorage.getItem(
+                    `stock_${product.product_code}`
+                );
+
+            if (savedStock !== null) {
 
                 product.quantity =
-                    Number(
-                        savedStock[
-                            product.product_code
-                        ]
-                    );
+                    Number(savedStock);
 
             }
 
@@ -64,11 +51,12 @@ async function loadProducts() {
             "products"
         ).innerHTML = `
 
-            <h3>Unable to load products</h3>
+            <h3>
+                Unable to load products
+            </h3>
 
             <p>
-                Please check the browser console
-                for details.
+                Please check the browser console.
             </p>
 
         `;
@@ -85,7 +73,6 @@ function displayProducts() {
 
     const container =
         document.getElementById("products");
-
 
     container.innerHTML = "";
 
@@ -143,8 +130,6 @@ function displayProducts() {
         container.appendChild(card);
 
 
-        // Generate QR Code
-
         new QRCode(
 
             document.getElementById(
@@ -194,7 +179,6 @@ function startScanner() {
         },
 
         onScanSuccess,
-
         onScanError
 
     );
@@ -214,147 +198,7 @@ function onScanSuccess(decodedText) {
         );
 
 
-    if (product) {
-
-
-        // ---------------------------------------------
-        // Create audit entry for EVERY scan
-        // ---------------------------------------------
-
-        createAuditLog(product);
-
-
-        // ---------------------------------------------
-        // Display product
-        // ---------------------------------------------
-
-        document.getElementById(
-            "scan-result"
-        ).innerHTML = `
-
-            <h2>
-                Product Found
-            </h2>
-
-            <p>
-                <strong>
-                    Product:
-                </strong>
-
-                ${product.product_name}
-            </p>
-
-            <p>
-                <strong>
-                    Product Code:
-                </strong>
-
-                ${product.product_code}
-            </p>
-
-            <p>
-                <strong>
-                    Category:
-                </strong>
-
-                ${product.category}
-            </p>
-
-            <p>
-                <strong>
-                    Current Stock:
-                </strong>
-
-                <span id="scanned-stock">
-                    ${product.quantity}
-                </span>
-            </p>
-
-            <p>
-                <strong>
-                    Selling Price:
-                </strong>
-
-                ₹${product.selling_price}
-            </p>
-
-            <hr>
-
-
-            <h3>
-                Stock In
-            </h3>
-
-            <input
-                type="number"
-                id="stock-in-qty"
-                min="1"
-                value="1"
-            >
-
-            <button
-                onclick="stockIn(
-                    '${product.product_code}'
-                )">
-
-                Add Stock
-
-            </button>
-
-
-            <h3>
-                Stock Out
-            </h3>
-
-            <input
-                type="number"
-                id="stock-out-qty"
-                min="1"
-                value="1"
-            >
-
-            <button
-                onclick="stockOut(
-                    '${product.product_code}'
-                )">
-
-                Remove Stock
-
-            </button>
-
-
-            <div id="stock-message"></div>
-
-        `;
-
-
-        // Stop scanner
-
-        if (scanner) {
-
-            scanner.stop()
-
-                .then(() => {
-
-                    console.log(
-                        "Scanner stopped"
-                    );
-
-                })
-
-                .catch(error => {
-
-                    console.error(
-                        "Scanner stop error:",
-                        error
-                    );
-
-                });
-
-        }
-
-    }
-    else {
+    if (!product) {
 
         document.getElementById(
             "scan-result"
@@ -371,6 +215,121 @@ function onScanSuccess(decodedText) {
 
         `;
 
+        return;
+    }
+
+
+    // Create audit record
+    createAuditLog(product);
+
+
+    // Display product details
+
+    document.getElementById(
+        "scan-result"
+    ).innerHTML = `
+
+        <h2>
+            Product Found
+        </h2>
+
+        <p>
+            <strong>Product:</strong>
+            ${product.product_name}
+        </p>
+
+        <p>
+            <strong>Product Code:</strong>
+            ${product.product_code}
+        </p>
+
+        <p>
+            <strong>Category:</strong>
+            ${product.category}
+        </p>
+
+        <p>
+            <strong>Current Stock:</strong>
+
+            <span id="scanned-stock">
+                ${product.quantity}
+            </span>
+
+        </p>
+
+        <p>
+            <strong>Selling Price:</strong>
+            ₹${product.selling_price}
+        </p>
+
+
+        <hr>
+
+
+        <h3>
+            Stock In
+        </h3>
+
+        <input
+            type="number"
+            id="stock-in-qty"
+            min="1"
+            value="1"
+        >
+
+        <button
+            onclick="stockIn('${product.product_code}')">
+
+            Add Stock
+
+        </button>
+
+
+        <h3>
+            Stock Out
+        </h3>
+
+        <input
+            type="number"
+            id="stock-out-qty"
+            min="1"
+            value="1"
+        >
+
+        <button
+            onclick="stockOut('${product.product_code}')">
+
+            Remove Stock
+
+        </button>
+
+
+        <div id="stock-message"></div>
+
+    `;
+
+
+    // Stop scanner
+
+    if (scanner) {
+
+        scanner.stop()
+            .then(() => {
+
+                console.log(
+                    "Scanner stopped"
+                );
+
+            })
+            .catch(error => {
+
+                console.error(
+                    "Scanner stop error:",
+                    error
+                );
+
+            });
+
     }
 
 }
@@ -378,7 +337,7 @@ function onScanSuccess(decodedText) {
 
 
 // =====================================================
-// CREATE QR SCAN AUDIT LOG
+// QR SCAN AUDIT
 // =====================================================
 
 function createAuditLog(product) {
@@ -437,13 +396,8 @@ function createAuditLog(product) {
 
 
     localStorage.setItem(
-
         "audit_logs",
-
-        JSON.stringify(
-            auditLogs
-        )
-
+        JSON.stringify(auditLogs)
     );
 
 
@@ -461,14 +415,12 @@ function createAuditLog(product) {
 
 function stockIn(productCode) {
 
-    const input =
-        document.getElementById(
-            "stock-in-qty"
-        );
-
-
     const quantity =
-        Number(input.value);
+        Number(
+            document.getElementById(
+                "stock-in-qty"
+            ).value
+        );
 
 
     if (!quantity || quantity <= 0) {
@@ -501,21 +453,17 @@ function stockIn(productCode) {
         product.quantity;
 
 
-    // Increase stock
-
     product.quantity += quantity;
 
 
-    // Save permanently in browser
+    // Save stock
 
     saveStock(product);
 
 
-    // Update screen
+    // Update display
 
-    updateDisplayedStock(
-        product
-    );
+    updateDisplayedStock(product);
 
 
     // Audit
@@ -541,7 +489,6 @@ function stockIn(productCode) {
          New stock: ${product.quantity}`
 
     );
-
 }
 
 
@@ -552,14 +499,12 @@ function stockIn(productCode) {
 
 function stockOut(productCode) {
 
-    const input =
-        document.getElementById(
-            "stock-out-qty"
-        );
-
-
     const quantity =
-        Number(input.value);
+        Number(
+            document.getElementById(
+                "stock-out-qty"
+            ).value
+        );
 
 
     if (!quantity || quantity <= 0) {
@@ -588,12 +533,7 @@ function stockOut(productCode) {
     }
 
 
-    // Prevent negative stock
-
-    if (
-        quantity >
-        product.quantity
-    ) {
+    if (quantity > product.quantity) {
 
         showStockMessage(
 
@@ -611,21 +551,17 @@ function stockOut(productCode) {
         product.quantity;
 
 
-    // Reduce stock
-
     product.quantity -= quantity;
 
 
-    // Save permanently
+    // Save stock
 
     saveStock(product);
 
 
-    // Update screen
+    // Update display
 
-    updateDisplayedStock(
-        product
-    );
+    updateDisplayedStock(product);
 
 
     // Audit
@@ -651,7 +587,6 @@ function stockOut(productCode) {
          New stock: ${product.quantity}`
 
     );
-
 }
 
 
@@ -662,59 +597,41 @@ function stockOut(productCode) {
 
 function saveStock(product) {
 
-    // Get existing stock data
+    const key =
+        `stock_${product.product_code}`;
 
-    const stockData =
-        JSON.parse(
-            localStorage.getItem(
-                "stock_data"
-            )
-        ) || {};
-
-
-    // Update product stock
-
-    stockData[
-        product.product_code
-    ] =
-        product.quantity;
-
-
-    // Save complete stock object
 
     localStorage.setItem(
-
-        "stock_data",
-
-        JSON.stringify(
-            stockData
-        )
-
+        key,
+        String(product.quantity)
     );
+
+
+    // Verify immediately
+
+    const savedValue =
+        localStorage.getItem(key);
 
 
     console.log(
         "Stock saved:",
-        stockData
+        key,
+        savedValue
     );
 }
 
 
 
 // =====================================================
-// CREATE STOCK MOVEMENT AUDIT
+// STOCK MOVEMENT AUDIT
 // =====================================================
 
 function createMovementAuditLog(
 
     product,
-
     action,
-
     quantity,
-
     stockBefore,
-
     stockAfter
 
 ) {
@@ -792,7 +709,7 @@ function createMovementAuditLog(
 
 
 // =====================================================
-// UPDATE DISPLAYED STOCK
+// UPDATE STOCK DISPLAY
 // =====================================================
 
 function updateDisplayedStock(product) {
@@ -813,9 +730,7 @@ function updateDisplayedStock(product) {
 
     const productStock =
         document.getElementById(
-
             `stock-${product.product_code}`
-
         );
 
 
@@ -831,7 +746,7 @@ function updateDisplayedStock(product) {
 
 
 // =====================================================
-// SHOW STOCK MESSAGE
+// SHOW MESSAGE
 // =====================================================
 
 function showStockMessage(message) {
@@ -866,7 +781,7 @@ function showStockMessage(message) {
 
 function onScanError(errorMessage) {
 
-    // Continuous scanning errors are ignored
+    // Ignore continuous scanner errors
 
 }
 
