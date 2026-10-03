@@ -1,27 +1,40 @@
-```javascript
 let products = [];
 let scanner = null;
 
 async function loadProducts() {
+    try {
+        const response = await fetch("./data/products.json");
 
-    const response = await fetch("./data/products.json");
-
-    products = await response.json();
-
-    // Load previously updated stock from browser
-    products.forEach(product => {
-
-        const savedStock = localStorage.getItem(
-            `stock_${product.product_code}`
-        );
-
-        if (savedStock !== null) {
-            product.quantity = Number(savedStock);
+        if (!response.ok) {
+            throw new Error("Unable to load products.json");
         }
 
-    });
+        products = await response.json();
 
-    displayProducts();
+        // Load previously updated stock from browser localStorage
+        products.forEach(product => {
+
+            const savedStock = localStorage.getItem(
+                `stock_${product.product_code}`
+            );
+
+            if (savedStock !== null) {
+                product.quantity = Number(savedStock);
+            }
+
+        });
+
+        displayProducts();
+
+    } catch (error) {
+
+        console.error("Error loading products:", error);
+
+        document.getElementById("products").innerHTML = `
+            <h3>Unable to load products</h3>
+            <p>Please check the browser console for details.</p>
+        `;
+    }
 }
 
 
@@ -38,11 +51,20 @@ function displayProducts() {
         card.innerHTML = `
             <h2>${product.product_name}</h2>
 
-            <p>Product Code: ${product.product_code}</p>
+            <p>
+                Product Code:
+                ${product.product_code}
+            </p>
 
-            <p>QR Code: ${product.qr_code}</p>
+            <p>
+                QR Code:
+                ${product.qr_code}
+            </p>
 
-            <p>Category: ${product.category}</p>
+            <p>
+                Category:
+                ${product.category}
+            </p>
 
             <p>
                 Current Stock:
@@ -51,10 +73,14 @@ function displayProducts() {
                 </strong>
             </p>
 
-            <p>Selling Price: ₹${product.selling_price}</p>
+            <p>
+                Selling Price:
+                ₹${product.selling_price}
+            </p>
 
-            <div class="qr-container"
-                 id="qr-${product.product_code}">
+            <div
+                class="qr-container"
+                id="qr-${product.product_code}">
             </div>
         `;
 
@@ -161,7 +187,15 @@ function onScanSuccess(decodedText) {
             <div id="stock-message"></div>
         `;
 
-        scanner.stop();
+        if (scanner) {
+            scanner.stop()
+                .then(() => {
+                    console.log("Scanner stopped");
+                })
+                .catch(error => {
+                    console.error("Scanner stop error:", error);
+                });
+        }
 
     } else {
 
@@ -175,13 +209,15 @@ function onScanSuccess(decodedText) {
 
 function stockIn(productCode) {
 
-    const quantity = Number(
-        document.getElementById("stock-in-qty").value
-    );
+    const input = document.getElementById("stock-in-qty");
+
+    const quantity = Number(input.value);
 
     if (!quantity || quantity <= 0) {
 
-        showStockMessage("Please enter a valid quantity.");
+        showStockMessage(
+            "Please enter a valid quantity."
+        );
 
         return;
     }
@@ -189,6 +225,15 @@ function stockIn(productCode) {
     const product = products.find(
         p => p.product_code === productCode
     );
+
+    if (!product) {
+
+        showStockMessage(
+            "Product not found."
+        );
+
+        return;
+    }
 
     product.quantity += quantity;
 
@@ -204,13 +249,15 @@ function stockIn(productCode) {
 
 function stockOut(productCode) {
 
-    const quantity = Number(
-        document.getElementById("stock-out-qty").value
-    );
+    const input = document.getElementById("stock-out-qty");
+
+    const quantity = Number(input.value);
 
     if (!quantity || quantity <= 0) {
 
-        showStockMessage("Please enter a valid quantity.");
+        showStockMessage(
+            "Please enter a valid quantity."
+        );
 
         return;
     }
@@ -218,6 +265,15 @@ function stockOut(productCode) {
     const product = products.find(
         p => p.product_code === productCode
     );
+
+    if (!product) {
+
+        showStockMessage(
+            "Product not found."
+        );
+
+        return;
+    }
 
     if (quantity > product.quantity) {
 
@@ -271,16 +327,24 @@ function updateDisplayedStock(product) {
 
 function showStockMessage(message) {
 
-    document.getElementById("stock-message").innerHTML = `
-        <p><strong>${message}</strong></p>
-    `;
+    const messageElement =
+        document.getElementById("stock-message");
+
+    if (messageElement) {
+
+        messageElement.innerHTML = `
+            <p>
+                <strong>${message}</strong>
+            </p>
+        `;
+    }
 }
 
 
 function onScanError(errorMessage) {
+
     // Ignore continuous scanning errors
 }
 
 
 loadProducts();
-```
