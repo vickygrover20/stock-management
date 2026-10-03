@@ -1,6 +1,6 @@
 async function loadProducts() {
 
-    const response = await fetch("data/products.json");
+    const response = await fetch("./data/products.json");
 
     const products = await response.json();
 
@@ -13,27 +13,17 @@ async function loadProducts() {
         card.innerHTML = `
             <h2>${product.product_name}</h2>
 
-            <p>
-                Product Code: ${product.product_code}
-            </p>
+            <p>Product Code: ${product.product_code}</p>
 
-            <p>
-                QR Code: ${product.qr_code}
-            </p>
+            <p>QR Code: ${product.qr_code}</p>
 
-            <p>
-                Category: ${product.category}
-            </p>
+            <p>Category: ${product.category}</p>
 
-            <p>
-                Current Stock: ${product.quantity}
-            </p>
+            <p>Current Stock: ${product.quantity}</p>
 
-            <p>
-                Selling Price: ₹${product.selling_price}
-            </p>
+            <p>Selling Price: ₹${product.selling_price}</p>
 
-            <div id="qr-${product.product_code}"></div>
+            <div class="qr-container" id="qr-${product.product_code}"></div>
         `;
 
         container.appendChild(card);
@@ -43,7 +33,10 @@ async function loadProducts() {
             {
                 text: product.qr_code,
                 width: 150,
-                height: 150
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
             }
         );
 
