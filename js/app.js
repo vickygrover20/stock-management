@@ -1,3 +1,4 @@
+```javascript
 let products = [];
 let scanner = null;
 
@@ -137,7 +138,7 @@ function onScanSuccess(decodedText) {
                 type="number"
                 id="stock-in-qty"
                 min="1"
-                placeholder="Enter quantity"
+                value="1"
             >
 
             <button onclick="stockIn('${product.product_code}')">
@@ -150,7 +151,7 @@ function onScanSuccess(decodedText) {
                 type="number"
                 id="stock-out-qty"
                 min="1"
-                placeholder="Enter quantity"
+                value="1"
             >
 
             <button onclick="stockOut('${product.product_code}')">
@@ -282,3 +283,4 @@ function onScanError(errorMessage) {
 
 
 loadProducts();
+```
