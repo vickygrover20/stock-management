@@ -6,15 +6,23 @@
 
     <title>Stock Management POC</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="./css/style.css">
 
-    <!-- Local QR Code Library -->
     <script src="./js/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 
 <body>
 
     <h1>Stock Management</h1>
+
+    <button onclick="startScanner()">Scan QR Code</button>
+
+    <div id="reader"></div>
+
+    <div id="scan-result"></div>
+
+    <hr>
 
     <h2>Products</h2>
 
