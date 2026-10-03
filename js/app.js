@@ -38,7 +38,6 @@ async function loadProducts() {
 
         container.appendChild(card);
 
-        // Generate QR code
         new QRCode(
             document.getElementById(`qr-${product.product_code}`),
             {
@@ -50,38 +49,5 @@ async function loadProducts() {
 
     });
 }
-
-
-function startScanner() {
-
-    const scanner = new Html5Qrcode("reader");
-
-    scanner.start(
-
-        { facingMode: "environment" },
-
-        {
-            fps: 10,
-            qrbox: 250
-        },
-
-        (decodedText) => {
-
-            document.getElementById("scan-result").innerHTML =
-                `<h3>Scanned QR: ${decodedText}</h3>`;
-
-            scanner.stop();
-
-        },
-
-        (errorMessage) => {
-
-            // Ignore scanning errors
-
-        }
-
-    );
-}
-
 
 loadProducts();
