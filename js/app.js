@@ -1,8 +1,15 @@
 let products = [];
 let scanner = null;
 
+
+// ===============================
+// LOAD PRODUCTS
+// ===============================
+
 async function loadProducts() {
+
     try {
+
         const response = await fetch("./data/products.json");
 
         if (!response.ok) {
@@ -11,7 +18,9 @@ async function loadProducts() {
 
         products = await response.json();
 
-        // Load previously updated stock from browser localStorage
+
+        // Load previously updated stock from localStorage
+
         products.forEach(product => {
 
             const savedStock = localStorage.getItem(
@@ -23,6 +32,7 @@ async function loadProducts() {
             }
 
         });
+
 
         displayProducts();
 
@@ -38,17 +48,25 @@ async function loadProducts() {
 }
 
 
+
+// ===============================
+// DISPLAY PRODUCTS
+// ===============================
+
 function displayProducts() {
 
     const container = document.getElementById("products");
 
     container.innerHTML = "";
 
+
     products.forEach(product => {
 
         const card = document.createElement("div");
 
+
         card.innerHTML = `
+
             <h2>${product.product_name}</h2>
 
             <p>
@@ -82,12 +100,19 @@ function displayProducts() {
                 class="qr-container"
                 id="qr-${product.product_code}">
             </div>
+
         `;
+
 
         container.appendChild(card);
 
+
+        // Generate QR code
+
         new QRCode(
-            document.getElementById(`qr-${product.product_code}`),
+            document.getElementById(
+                `qr-${product.product_code}`
+            ),
             {
                 text: product.qr_code,
                 width: 150,
@@ -97,25 +122,41 @@ function displayProducts() {
                 correctLevel: QRCode.CorrectLevel.H
             }
         );
+
     });
 }
 
+
+
+// ===============================
+// START QR SCANNER
+// ===============================
 
 function startScanner() {
 
     scanner = new Html5Qrcode("reader");
 
+
     scanner.start(
+
         { facingMode: "environment" },
+
         {
             fps: 10,
             qrbox: 250
         },
+
         onScanSuccess,
         onScanError
+
     );
 }
 
+
+
+// ===============================
+// QR SCAN SUCCESS
+// ===============================
 
 function onScanSuccess(decodedText) {
 
@@ -123,7 +164,20 @@ function onScanSuccess(decodedText) {
         p => p.qr_code === decodedText
     );
 
+
     if (product) {
+
+
+        // ==================================
+        // CREATE AUDIT LOG
+        // ==================================
+
+        createAuditLog(product);
+
+
+        // ==================================
+        // DISPLAY PRODUCT DETAILS
+        // ==================================
 
         document.getElementById("scan-result").innerHTML = `
 
@@ -167,9 +221,11 @@ function onScanSuccess(decodedText) {
                 value="1"
             >
 
-            <button onclick="stockIn('${product.product_code}')">
+            <button
+                onclick="stockIn('${product.product_code}')">
                 Add Stock
             </button>
+
 
             <h3>Stock Out</h3>
 
@@ -180,38 +236,163 @@ function onScanSuccess(decodedText) {
                 value="1"
             >
 
-            <button onclick="stockOut('${product.product_code}')">
+            <button
+                onclick="stockOut('${product.product_code}')">
                 Remove Stock
             </button>
 
+
             <div id="stock-message"></div>
+
         `;
 
+
+        // Stop scanner after successful scan
+
         if (scanner) {
+
             scanner.stop()
+
                 .then(() => {
-                    console.log("Scanner stopped");
+
+                    console.log(
+                        "Scanner stopped"
+                    );
+
                 })
+
                 .catch(error => {
-                    console.error("Scanner stop error:", error);
+
+                    console.error(
+                        "Scanner stop error:",
+                        error
+                    );
+
                 });
+
         }
 
     } else {
 
-        document.getElementById("scan-result").innerHTML = `
+
+        document.getElementById(
+            "scan-result"
+        ).innerHTML = `
+
             <h3>Product not found</h3>
-            <p>Scanned QR: ${decodedText}</p>
+
+            <p>
+                Scanned QR:
+                ${decodedText}
+            </p>
+
         `;
+
     }
 }
 
 
+
+// ===============================
+// CREATE AUDIT LOG
+// ===============================
+
+function createAuditLog(product) {
+
+
+    // Get existing audit logs
+
+    let auditLogs =
+        JSON.parse(
+            localStorage.getItem("audit_logs")
+        ) || [];
+
+
+    // Generate next Audit ID
+
+    const auditId =
+        auditLogs.length > 0
+            ? auditLogs[auditLogs.length - 1].audit_id + 1
+            : 1;
+
+
+    // Current timestamp
+
+    const timestamp =
+        new Date().toISOString();
+
+
+    // Stock does not change during scanning
+
+    const stockBefore =
+        product.quantity;
+
+    const stockAfter =
+        product.quantity;
+
+
+    // Create audit record
+
+    const auditRecord = {
+
+        audit_id: auditId,
+
+        timestamp: timestamp,
+
+        action: "QR_SCAN",
+
+        qr_code: product.qr_code,
+
+        product_code: product.product_code,
+
+        product_name: product.product_name,
+
+        quantity: 0,
+
+        stock_before: stockBefore,
+
+        stock_after: stockAfter
+
+    };
+
+
+    // Add new record
+
+    auditLogs.push(auditRecord);
+
+
+    // Save back to browser
+
+    localStorage.setItem(
+        "audit_logs",
+        JSON.stringify(auditLogs)
+    );
+
+
+    console.log(
+        "Audit Log Created:",
+        auditRecord
+    );
+}
+
+
+
+// ===============================
+// STOCK IN
+// ===============================
+
 function stockIn(productCode) {
 
-    const input = document.getElementById("stock-in-qty");
 
-    const quantity = Number(input.value);
+    const input =
+        document.getElementById(
+            "stock-in-qty"
+        );
+
+
+    const quantity =
+        Number(input.value);
+
 
     if (!quantity || quantity <= 0) {
 
@@ -222,9 +403,12 @@ function stockIn(productCode) {
         return;
     }
 
-    const product = products.find(
-        p => p.product_code === productCode
-    );
+
+    const product =
+        products.find(
+            p => p.product_code === productCode
+        );
+
 
     if (!product) {
 
@@ -235,11 +419,38 @@ function stockIn(productCode) {
         return;
     }
 
+
+    // Save stock before change
+
+    const stockBefore =
+        product.quantity;
+
+
+    // Increase stock
+
     product.quantity += quantity;
+
+
+    // Save stock
 
     saveStock(product);
 
+
+    // Update screen
+
     updateDisplayedStock(product);
+
+
+    // Create stock movement audit
+
+    createMovementAuditLog(
+        product,
+        "STOCK_IN",
+        quantity,
+        stockBefore,
+        product.quantity
+    );
+
 
     showStockMessage(
         `Stock added successfully. New stock: ${product.quantity}`
@@ -247,11 +458,23 @@ function stockIn(productCode) {
 }
 
 
+
+// ===============================
+// STOCK OUT
+// ===============================
+
 function stockOut(productCode) {
 
-    const input = document.getElementById("stock-out-qty");
 
-    const quantity = Number(input.value);
+    const input =
+        document.getElementById(
+            "stock-out-qty"
+        );
+
+
+    const quantity =
+        Number(input.value);
+
 
     if (!quantity || quantity <= 0) {
 
@@ -262,9 +485,12 @@ function stockOut(productCode) {
         return;
     }
 
-    const product = products.find(
-        p => p.product_code === productCode
-    );
+
+    const product =
+        products.find(
+            p => p.product_code === productCode
+        );
+
 
     if (!product) {
 
@@ -274,6 +500,9 @@ function stockOut(productCode) {
 
         return;
     }
+
+
+    // Check available stock
 
     if (quantity > product.quantity) {
 
@@ -284,11 +513,38 @@ function stockOut(productCode) {
         return;
     }
 
+
+    // Save stock before change
+
+    const stockBefore =
+        product.quantity;
+
+
+    // Reduce stock
+
     product.quantity -= quantity;
+
+
+    // Save stock
 
     saveStock(product);
 
+
+    // Update screen
+
     updateDisplayedStock(product);
+
+
+    // Create stock movement audit
+
+    createMovementAuditLog(
+        product,
+        "STOCK_OUT",
+        quantity,
+        stockBefore,
+        product.quantity
+    );
+
 
     showStockMessage(
         `Stock removed successfully. New stock: ${product.quantity}`
@@ -296,55 +552,187 @@ function stockOut(productCode) {
 }
 
 
-function saveStock(product) {
+
+// ===============================
+// CREATE STOCK MOVEMENT AUDIT LOG
+// ===============================
+
+function createMovementAuditLog(
+    product,
+    action,
+    quantity,
+    stockBefore,
+    stockAfter
+) {
+
+
+    // Get existing audit logs
+
+    let auditLogs =
+        JSON.parse(
+            localStorage.getItem("audit_logs")
+        ) || [];
+
+
+    // Generate next Audit ID
+
+    const auditId =
+        auditLogs.length > 0
+            ? auditLogs[auditLogs.length - 1].audit_id + 1
+            : 1;
+
+
+    // Create record
+
+    const auditRecord = {
+
+        audit_id: auditId,
+
+        timestamp:
+            new Date().toISOString(),
+
+        action: action,
+
+        qr_code:
+            product.qr_code,
+
+        product_code:
+            product.product_code,
+
+        product_name:
+            product.product_name,
+
+        quantity:
+            quantity,
+
+        stock_before:
+            stockBefore,
+
+        stock_after:
+            stockAfter
+
+    };
+
+
+    // Add record
+
+    auditLogs.push(auditRecord);
+
+
+    // Save records
 
     localStorage.setItem(
-        `stock_${product.product_code}`,
-        product.quantity
+        "audit_logs",
+        JSON.stringify(auditLogs)
+    );
+
+
+    console.log(
+        "Movement Audit Log Created:",
+        auditRecord
     );
 }
 
 
+
+// ===============================
+// SAVE STOCK
+// ===============================
+
+function saveStock(product) {
+
+    localStorage.setItem(
+
+        `stock_${product.product_code}`,
+
+        product.quantity
+
+    );
+}
+
+
+
+// ===============================
+// UPDATE DISPLAYED STOCK
+// ===============================
+
 function updateDisplayedStock(product) {
 
+
     const scannedStock =
-        document.getElementById("scanned-stock");
+        document.getElementById(
+            "scanned-stock"
+        );
+
 
     if (scannedStock) {
-        scannedStock.textContent = product.quantity;
+
+        scannedStock.textContent =
+            product.quantity;
+
     }
+
 
     const productStock =
         document.getElementById(
             `stock-${product.product_code}`
         );
 
+
     if (productStock) {
-        productStock.textContent = product.quantity;
+
+        productStock.textContent =
+            product.quantity;
+
     }
 }
 
 
+
+// ===============================
+// SHOW STOCK MESSAGE
+// ===============================
+
 function showStockMessage(message) {
 
+
     const messageElement =
-        document.getElementById("stock-message");
+        document.getElementById(
+            "stock-message"
+        );
+
 
     if (messageElement) {
 
         messageElement.innerHTML = `
+
             <p>
-                <strong>${message}</strong>
+                <strong>
+                    ${message}
+                </strong>
             </p>
+
         `;
+
     }
 }
 
 
+
+// ===============================
+// SCAN ERROR
+// ===============================
+
 function onScanError(errorMessage) {
 
     // Ignore continuous scanning errors
+
 }
 
+
+
+// ===============================
+// START APPLICATION
+// ===============================
 
 loadProducts();
